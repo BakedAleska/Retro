@@ -1,15 +1,11 @@
 use std::time::{Duration, Instant};
 use std::thread;
+
 mod chip8;
 use chip8::Chip8;
 
 const CYCLES_PER_FRAME: u32 = 700 / 60;
 const FRAME_DURATION: Duration = Duration::from_nanos(1_000_000_000 / 60);
-
-
-fn draw() {
-
-}
 
 fn main() {
     let mut chip8 = Chip8::new();

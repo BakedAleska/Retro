@@ -1,3 +1,6 @@
+use std::ptr;
+use std::ptr::null;
+
 pub struct Chip8 {
     memory: [u8; 4096], // 4 kilobytes of RAM.
     display: [bool; 64 * 32], // 64 / 32 pixel "screen".
@@ -55,13 +58,88 @@ impl Chip8 {
         let opcode: u16 = (self.memory[self.pc] as u16) << 8 | self.memory[self.pc + 1] as u16;
         self.pc += 2;
 
-        // Decode / Execute
-        match opcode {
-            0x00E0 => {
-                self.display = [false; 64 * 32];
+        let first_nibble: u16 = opcode >> 12 & 0xF;
+        let second_nibble: u16 = opcode >> 8 & 0xF;
+        let third_nibble: u16 = opcode >> 4 & 0xF;
+        let last_nibble: u16 = opcode & 0xF;
+
+        match first_nibble {
+            0x0 => {
+                match last_nibble {
+                    0x0 => {
+                        // Clear screen.
+                        self.display = [false; 64 * 32];
+                    },
+                    0xE => {
+                        // Subroutines.
+                        // If there's something to pop, pop the last address from stack, and set pc to it.
+                        if (self.sp != 0) {
+
+                            self.pc = self.stack[self.sp - 1];
+                            self.sp -= 1
+                        }
+                    }
+                    _ => {}
+                }
             },
+            0x1 => {
+                // Jump.
+               self.pc = (opcode & 0xFFF) as usize;
+            },
+            0x6 => {
+                // Set.
+                self.registers[second_nibble as usize] = (opcode & 0xFF) as u8;
+            },
+            0x7 => {
+                // Add.
+                self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_add((opcode & 0xFF) as u8);
+            },
+            0xA => {
+                // Set index.
+                self.i = (opcode & 0xFFF) as usize;
+            },
+            0xD => {
+                // Draw.
+                let x_coord = self.registers[second_nibble as usize];
+                let y_coord = self.registers[third_nibble as usize];
+
+                let wrap_x = x_coord % 64;
+                let wrap_y = y_coord % 32;
+
+                let vf = &mut self.registers[0xF];
+                *vf = 0;
+
+                for row in 0..last_nibble {
+                    let sprite_byte = self.memory[self.i + row as usize];
+
+                    for col in 0..8 {
+                        let shift = 7 - col;
+
+                        let sprite_pixel = sprite_byte >> shift & 1;
+
+                        let screen_x = wrap_x + col;
+                        let screen_y = wrap_y + row as u8;
+
+                        if wrap_x + col > 63 || (wrap_y + row as u8) > 31 {
+                            continue;
+                        }
+
+                        let display_index = (screen_y as usize * 64 + screen_x as usize);
+                        let display_pixel = &mut self.display[display_index];
+
+                        if (sprite_pixel == 1) {
+                            if (*display_pixel == true) {
+                                *display_pixel = false;
+                                *vf = 1;
+                            } else {
+                                *display_pixel = true;
+                            }
+                        }
+                    }
+                }
+            }
             _ => {
-                println!("Unknown instruction: {:#X}", opcode)
+                println!("Unkown instruction: {:#X}", opcode)
             }
         }
     }
