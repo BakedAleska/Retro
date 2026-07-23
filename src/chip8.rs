@@ -1,6 +1,3 @@
-use std::ptr;
-use std::ptr::null;
-
 pub struct Chip8 {
     memory: [u8; 4096], // 4 kilobytes of RAM.
     display: [bool; 64 * 32], // 64 / 32 pixel "screen".
@@ -32,17 +29,18 @@ const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 ];
 
-const FONT_START_ADDRESS: usize = 0x50;
+const FONT_START: usize = 0x50;
+const PC_START: usize = 0x200;
 
 impl Chip8 {
     pub fn new() -> Self {
         let mut memory = [0u8; 4096];
-        memory[FONT_START_ADDRESS..FONT_START_ADDRESS + FONT.len()].copy_from_slice(&FONT);
+        memory[FONT_START..FONT_START + FONT.len()].copy_from_slice(&FONT);
 
         Chip8 {
             memory,
             display: [false; 64 * 32],
-            pc: 0x200,
+            pc: PC_START,
             i: 0,
             sp: 0,
             stack: [0; 16],
@@ -53,7 +51,16 @@ impl Chip8 {
         }
     }
 
+    pub fn display(&self) -> &[bool; 2048] {
+        &self.display
+    }
+
+    pub fn load(&mut self, rom: Vec<u8>) {
+        self.memory[PC_START..PC_START + rom.len()].copy_from_slice(&*rom);
+    }
+
     pub fn tick(&mut self) {
+
         // Fetch
         let opcode: u16 = (self.memory[self.pc] as u16) << 8 | self.memory[self.pc + 1] as u16;
         self.pc += 2;
