@@ -74,8 +74,6 @@ fn main() {
                 // Draw
                 let filled_rect = Rect::new(screen_x as i32, screen_y as i32, SCALE as u32, SCALE as u32);
                 sdl_canvas.fill_rect(filled_rect).expect("Fill failed.");
-
-
             }
         }
 

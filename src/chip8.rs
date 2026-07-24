@@ -71,7 +71,7 @@ impl Chip8 {
         let last_nibble: u16 = opcode & 0xF;
 
         match first_nibble {
-            0x0 => {
+            0 => {
                 match last_nibble {
                     0x0 => {
                         // Clear screen.
@@ -89,18 +89,48 @@ impl Chip8 {
                     _ => {}
                 }
             },
-            0x1 => {
+            1 => {
                 // Jump.
                self.pc = (opcode & 0xFFF) as usize;
             },
-            0x6 => {
+            2 => {
+                // Subroutine.
+                // Push the current pc to the stack.
+                if (self.sp < 16) {
+                    self.stack[self.sp] = self.pc;
+                    self.sp += 1;
+
+                    self.pc = (opcode & 0xFFF) as usize;
+                }
+            },
+            3 => {
+                if self.registers[second_nibble as usize] == (opcode & 0xFF) as u8 {
+                    self.pc += 2
+                }
+            },
+            4 => {
+                if self.registers[second_nibble as usize] != (opcode & 0xFF) as u8 {
+                    self.pc += 2
+                }
+            },
+            5 => {
+                if self.registers[second_nibble as usize] == self.registers[third_nibble as usize] {
+                    self.pc += 2
+                }
+            },
+            6 => {
                 // Set.
                 self.registers[second_nibble as usize] = (opcode & 0xFF) as u8;
             },
-            0x7 => {
+            7 => {
                 // Add.
                 self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_add((opcode & 0xFF) as u8);
             },
+            9 => {
+                if self.registers[second_nibble as usize] != self.registers[third_nibble as usize] {
+                    self.pc += 2
+                }
+            }
             0xA => {
                 // Set index.
                 self.i = (opcode & 0xFFF) as usize;
