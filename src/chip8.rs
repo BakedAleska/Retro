@@ -1,3 +1,10 @@
+use std::fs;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Config {
+    version: String,
+}
 pub struct Chip8 {
     memory: [u8; 4096], // 4 kilobytes of RAM.
     display: [bool; 64 * 32], // 64 / 32 pixel "screen".
@@ -9,7 +16,9 @@ pub struct Chip8 {
     sound_timer: u8, // Functions like the delay timer but gives off a beeping sound as long as it isn't 0.
     registers: [u8; 16], // 16, 8-bit general-purpose variable registers.
     keypad: [bool; 16], // Current press / released state of keys 0-F
+    config: Config,
 }
+
 const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -37,6 +46,9 @@ impl Chip8 {
         let mut memory = [0u8; 4096];
         memory[FONT_START..FONT_START + FONT.len()].copy_from_slice(&FONT);
 
+        let config_text = fs::read_to_string("config.toml").expect("Failed to read config file.");
+        let config: Config = toml::from_str(&config_text).expect("Failed to parse config.");
+
         Chip8 {
             memory,
             display: [false; 64 * 32],
@@ -48,7 +60,9 @@ impl Chip8 {
             sound_timer: 0,
             registers: [0; 16],
             keypad: [false; 16],
+            config,
         }
+
     }
 
     pub fn display(&self) -> &[bool; 2048] {
@@ -58,6 +72,8 @@ impl Chip8 {
     pub fn load(&mut self, rom: Vec<u8>) {
         self.memory[PC_START..PC_START + rom.len()].copy_from_slice(&*rom);
     }
+
+
 
     pub fn tick(&mut self) {
 
@@ -125,6 +141,73 @@ impl Chip8 {
             7 => {
                 // Add.
                 self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_add((opcode & 0xFF) as u8);
+            },
+            8 => {
+                match last_nibble {
+                    0 => {
+                        // Set.
+                        self.registers[second_nibble as usize] = self.registers[third_nibble as usize];
+                    },
+                    1 => {
+                        // OR
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] | self.registers[third_nibble as usize];
+                    },
+                    2 => {
+                        // AND
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] & self.registers[third_nibble as usize];
+                    },
+                    3 => {
+                        // XOR
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] ^ self.registers[third_nibble as usize];
+                    },
+                    4 => {
+                        // Add.
+                        if self.registers[second_nibble as usize] as u16 + (self.registers[third_nibble as usize] as u16) > 255{
+                            self.registers[0xF] = 1;
+                        } else {
+                            self.registers[0xF] = 0
+                        }
+
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_add(self.registers[third_nibble as usize]);
+                    },
+                    5 => {
+                        if self.registers[second_nibble as usize] >= self.registers[third_nibble as usize] {
+                            self.registers[0xF] = 1;
+                        } else {
+                            self.registers[0xF] = 0;
+                        }
+                        // Subtract.
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_sub(self.registers[third_nibble as usize]);
+                    },
+                    6 => {
+                        if self.config.version != "CHIP-48" {
+                            self.registers[second_nibble as usize] = self.registers[third_nibble as usize];
+                        }
+
+                        self.registers[0xF] = self.registers[second_nibble as usize] & 1;
+
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] >> 1;
+                    }
+                    7 => {
+                        if self.registers[third_nibble as usize] < self.registers[second_nibble as usize] {
+                            self.registers[0xF] = 0;
+                        } else {
+                            self.registers[0xF] = 1;
+                        }
+                        // Subtract.
+                        self.registers[second_nibble as usize] = self.registers[third_nibble as usize].wrapping_sub(self.registers[second_nibble as usize]);
+                    }
+                    0xE => {
+                        if self.config.version != "CHIP-48" {
+                            self.registers[second_nibble as usize] = self.registers[third_nibble as usize];
+                        }
+
+                        self.registers[0xF] = self.registers[second_nibble as usize] >> 7 & 1;
+
+                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] << 1;
+                    }
+                    _ => {}
+                }
             },
             9 => {
                 if self.registers[second_nibble as usize] != self.registers[third_nibble as usize] {

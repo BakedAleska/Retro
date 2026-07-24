@@ -1,0 +1,3 @@
+# Which CHIP-8 interpreter behavior to emulate. Affects ambigious instructions.
+# Options: "CHIP-8" or "CHIP-48".
+version = "CHIP-48"
