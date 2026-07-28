@@ -1,5 +1,8 @@
+// TODO: Clean up / divide the chip8.rs file into multiple modules namely an instructions module alongside a chip8 object module.
+
 use std::fs;
 use serde::Deserialize;
+use rand::random;
 
 #[derive(Deserialize)]
 struct Config {
@@ -85,6 +88,7 @@ impl Chip8 {
         let second_nibble: u16 = opcode >> 8 & 0xF;
         let third_nibble: u16 = opcode >> 4 & 0xF;
         let last_nibble: u16 = opcode & 0xF;
+        let last_byte: u16 = opcode & 0xFF;
 
         match first_nibble {
             0 => {
@@ -218,6 +222,19 @@ impl Chip8 {
                 // Set index.
                 self.i = (opcode & 0xFFF) as usize;
             },
+            0xB => {
+                // TODO: deal with potential out of bounds error. (Wrap with modulo or clamp; or print a panic message.)
+                // Jump with offset.
+                if self.config.version != "CHIP-48" {
+                    self.pc = (opcode & 0xFFF) as usize + self.registers[0] as usize;
+                } else {
+                    self.pc = (opcode & 0xFFF) as usize + self.registers[second_nibble as usize] as usize;
+                }
+            },
+            0xC => {
+                // Generate a random number and store it in VX.
+                self.registers[second_nibble as usize] = rand::random::<u8>() & (opcode & 0xFF) as u8;
+            },
             0xD => {
                 // Draw.
                 let x_coord = self.registers[second_nibble as usize];
@@ -258,6 +275,57 @@ impl Chip8 {
                     }
                 }
             }
+            0xF => {
+                match last_byte {
+                    0x15 => {
+                        self.delay_timer = self.registers[second_nibble as usize];
+                    },
+                    0x07 => {
+                        self.registers[second_nibble as usize] = self.delay_timer;
+                    },
+                    0x18 => {
+                        self.sound_timer = self.registers[second_nibble as usize];
+                    },
+                    0x1E => {
+                        self.i = self.i + self.registers[second_nibble as usize] as usize;
+                        if self.i >= 0x1000 {
+                            // Overflow (Amiga interpreter spec)
+                            self.registers[0xF] = 1;
+                        }
+                    },
+                    0x29 => {
+                        // Font character.
+                        self.i = FONT_START + ((self.registers[second_nibble as usize] as usize & 0xF) * 5);
+                    },
+                    0x33 => {
+                        let num = self.registers[second_nibble as usize];
+                        self.memory[self.i + 2] = num % 10;
+                        self.memory[self.i + 1] = (num / 10) % 10;
+                        self.memory[self.i] = ((num / 10) / 10) % 10;
+                    },
+                    0x55 => {
+                        for register in 0..=second_nibble {
+                            if self.config.version != "CHIP-48" {
+                                self.memory[self.i] = self.registers[register as usize];
+                                self.i += 1
+                            } else {
+                                self.memory[self.i + register as usize] = self.registers[register as usize];
+                            }
+                        }
+                    },
+                    0x65 => {
+                        for register in 0..=second_nibble {
+                            if self.config.version != "CHIP-48" {
+                                self.registers[register as usize] = self.memory[self.i];
+                                self.i += 1
+                            } else {
+                                self.registers[register as usize] = self.memory[self.i + register as usize];
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            },
             _ => {
                 println!("Unkown instruction: {:#X}", opcode)
             }
