@@ -1,10 +1,10 @@
 use std::time::{Duration, Instant};
 use std::{fs, thread};
-
 use sdl2;
 use sdl2::event::Event;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use sdl2::keyboard::Scancode;
 
 mod chip8;
 use chip8::Chip8;
@@ -17,6 +17,25 @@ const HEIGHT: i32 = 32;
 
 const SCALE: i32 = 16;
 
+const KEYS: [Scancode; 16] = [
+    Scancode::X,    // 0x0
+    Scancode::Num1, // 0x1
+    Scancode::Num2, // 0x2
+    Scancode::Num3, // 0x3
+    Scancode::Q,    // 0x4
+    Scancode::W,    // 0x5
+    Scancode::E,    // 0x6
+    Scancode::A,    // 0x7
+    Scancode::S,    // 0x8
+    Scancode::D,    // 0x9
+    Scancode::Z,    // 0xA
+    Scancode::C,    // 0xB
+    Scancode::Num4, // 0xC
+    Scancode::R,    // 0xD
+    Scancode::F,    // 0xE
+    Scancode::V,    // 0xF
+];
+
 fn main() {
     let mut chip8 = Chip8::new();
 
@@ -28,6 +47,28 @@ fn main() {
 
     let rom = fs::read("./roms/IBM Logo.ch8").expect("Failed to load rom file.");
     chip8.load(rom);
+
+    fn match_scancode(scancode: Scancode) -> Option<u8> {
+        match scancode {
+            Scancode::Num1 => Some(0x1),
+            Scancode::Num2 => Some(0x2),
+            Scancode::Num3 => Some(0x3),
+            Scancode::Num4 => Some(0xC),
+            Scancode::Q => Some(0x4),
+            Scancode::W => Some(0x5),
+            Scancode::E => Some(0x6),
+            Scancode::R => Some(0xD),
+            Scancode::A => Some(0x7),
+            Scancode::S => Some(0x8),
+            Scancode::D => Some(0x9),
+            Scancode::F => Some(0xE),
+            Scancode::Z => Some(0xA),
+            Scancode::X => Some(0x0),
+            Scancode::C => Some(0xB),
+            Scancode::V => Some(0xF),
+            _ => None
+        }
+    }
 
     loop {
         let frame_start = Instant::now();
@@ -74,6 +115,16 @@ fn main() {
                 // Draw
                 let filled_rect = Rect::new(screen_x as i32, screen_y as i32, SCALE as u32, SCALE as u32);
                 sdl_canvas.fill_rect(filled_rect).expect("Fill failed.");
+            }
+        }
+
+        for scancode in KEYS {
+            let index = match_scancode(scancode).unwrap();
+            if sdl_event_pump.keyboard_state().is_scancode_pressed(scancode) {
+
+                chip8.set_key(index as usize, true)
+            } else {
+                chip8.set_key(index as usize, false)
             }
         }
 

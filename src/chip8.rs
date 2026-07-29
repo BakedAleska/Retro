@@ -2,7 +2,6 @@
 
 use std::fs;
 use serde::Deserialize;
-use rand::random;
 
 #[derive(Deserialize)]
 struct Config {
@@ -49,6 +48,7 @@ impl Chip8 {
         let mut memory = [0u8; 4096];
         memory[FONT_START..FONT_START + FONT.len()].copy_from_slice(&FONT);
 
+        // TODO: Change to read from .exe dir
         let config_text = fs::read_to_string("config.toml").expect("Failed to read config file.");
         let config: Config = toml::from_str(&config_text).expect("Failed to parse config.");
 
@@ -66,6 +66,10 @@ impl Chip8 {
             config,
         }
 
+    }
+
+    pub fn set_key(&mut self, index: usize, pressed: bool) {
+        self.keypad[index] = pressed;
     }
 
     pub fn display(&self) -> &[bool; 2048] {
@@ -100,8 +104,7 @@ impl Chip8 {
                     0xE => {
                         // Subroutines.
                         // If there's something to pop, pop the last address from stack, and set pc to it.
-                        if (self.sp != 0) {
-
+                        if self.sp != 0 {
                             self.pc = self.stack[self.sp - 1];
                             self.sp -= 1
                         }
@@ -116,7 +119,7 @@ impl Chip8 {
             2 => {
                 // Subroutine.
                 // Push the current pc to the stack.
-                if (self.sp < 16) {
+                if self.sp < 16 {
                     self.stack[self.sp] = self.pc;
                     self.sp += 1;
 
@@ -261,11 +264,11 @@ impl Chip8 {
                             continue;
                         }
 
-                        let display_index = (screen_y as usize * 64 + screen_x as usize);
+                        let display_index = screen_y as usize * 64 + screen_x as usize;
                         let display_pixel = &mut self.display[display_index];
 
-                        if (sprite_pixel == 1) {
-                            if (*display_pixel == true) {
+                        if sprite_pixel == 1 {
+                            if *display_pixel == true {
                                 *display_pixel = false;
                                 *vf = 1;
                             } else {
