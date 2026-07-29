@@ -1,25 +1,32 @@
 // TODO: Clean up / divide the chip8.rs file into multiple modules namely an instructions module alongside a chip8 object module.
-// TODO: General flag instruction debugging / math instruction debugging.
 
 use std::fs;
 use serde::Deserialize;
+
+use rodio::{Decoder, OutputStream, Sink};
+use std::fs::File;
+use std::io::BufReader;
+use std::process::Output;
 
 #[derive(Deserialize)]
 struct Config {
     version: String,
 }
 pub struct Chip8 {
-    memory: [u8; 4096], // 4 kilobytes of RAM.
-    display: [bool; 64 * 32], // 64 / 32 pixel "screen".
-    pc: usize, // Program counter.
-    i: usize, // 16 bit index register
-    sp: usize, // Stack pointer.
-    stack: [usize; 16], // Stack; holds 16 bit addresses.
-    delay_timer: u8, // Decremented at a rate of 60 Hz until it reaches 0.
-    sound_timer: u8, // Functions like the delay timer but gives off a beeping sound as long as it isn't 0.
-    registers: [u8; 16], // 16, 8-bit general-purpose variable registers.
-    keypad: [bool; 16], // Current press / released state of keys 0-F
+    memory: [u8; 4096],
+    display: [bool; 64 * 32],
+    pc: usize,
+    i: usize,
+    sp: usize,
+    stack: [usize; 16],
+    delay_timer: u8,
+    sound_timer: u8,
+    registers: [u8; 16],
+    keypad: [bool; 16],
     config: Config,
+
+    _stream: OutputStream,
+    beep: Sink,
 }
 
 const FONT: [u8; 80] = [
@@ -53,6 +60,12 @@ impl Chip8 {
         let config_text = fs::read_to_string("config.toml").expect("Failed to read config file.");
         let config: Config = toml::from_str(&config_text).expect("Failed to parse config.");
 
+        let (_stream, stream_handle) = rodio::OutputStream::try_default()
+            .expect("Failed to open audio device");
+
+        let beep = Sink::try_new(&stream_handle)
+            .expect("Failed to create audio sink");
+
         Chip8 {
             memory,
             display: [false; 64 * 32],
@@ -65,6 +78,9 @@ impl Chip8 {
             registers: [0; 16],
             keypad: [false; 16],
             config,
+
+            _stream,
+            beep,
         }
 
     }
@@ -80,7 +96,6 @@ impl Chip8 {
     pub fn load(&mut self, rom: Vec<u8>) {
         self.memory[PC_START..PC_START + rom.len()].copy_from_slice(&*rom);
     }
-
 
     pub fn tick(&mut self) {
 
@@ -168,51 +183,68 @@ impl Chip8 {
                         self.registers[second_nibble as usize] = self.registers[second_nibble as usize] ^ self.registers[third_nibble as usize];
                     },
                     4 => {
-                        // Add.
-                        if self.registers[second_nibble as usize] as u16 + (self.registers[third_nibble as usize] as u16) > 255{
-                            self.registers[0xF] = 1;
-                        } else {
-                            self.registers[0xF] = 0
-                        }
+                        let vx_index = second_nibble as usize;
+                        let vy_index = third_nibble as usize;
+                        let vx_value = self.registers[vx_index];
+                        let vy_value = self.registers[vy_index];
 
-                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_add(self.registers[third_nibble as usize]);
+                        let carry = (vx_value as u16 + vy_value as u16) > 255;
+
+                        self.registers[vx_index] = vx_value.wrapping_add(vy_value);
+                        self.registers[0xF] = if carry { 1 } else { 0 };
                     },
                     5 => {
-                        if self.registers[second_nibble as usize] >= self.registers[third_nibble as usize] {
-                            self.registers[0xF] = 1;
-                        } else {
-                            self.registers[0xF] = 0;
-                        }
-                        // Subtract.
-                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize].wrapping_sub(self.registers[third_nibble as usize]);
+                        let vx_index = second_nibble as usize;
+                        let vy_index = third_nibble as usize;
+                        let vx_value = self.registers[vx_index];
+                        let vy_value = self.registers[vy_index];
+
+                        let no_borrow = vx_value >= vy_value;
+
+                        self.registers[vx_index] = vx_value.wrapping_sub(vy_value);
+                        self.registers[0xF] = if no_borrow { 1 } else { 0 };
                     },
                     6 => {
-                        if self.config.version != "CHIP-48" {
-                            self.registers[second_nibble as usize] = self.registers[third_nibble as usize];
-                        }
+                        let vx_index = second_nibble as usize;
+                        let vy_index = third_nibble as usize;
 
-                        self.registers[0xF] = self.registers[second_nibble as usize] & 1;
-
-                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] >> 1;
-                    }
-                    7 => {
-                        if self.registers[third_nibble as usize] < self.registers[second_nibble as usize] {
-                            self.registers[0xF] = 0;
+                        let source_value = if self.config.version != "CHIP-48" {
+                            self.registers[vy_index]
                         } else {
-                            self.registers[0xF] = 1;
-                        }
+                            self.registers[vx_index]
+                        };
+
+                        let dropped_bit = source_value & 1;
+
+                        self.registers[vx_index] = source_value >> 1;
+                        self.registers[0xF] = dropped_bit;
+                    },
+                    7 => {
+                        let vx_index = second_nibble as usize;
+                        let vy_index = third_nibble as usize;
+
+                        let vx_value = self.registers[vx_index];
+                        let vy_value = self.registers[vy_index];
+
                         // Subtract.
-                        self.registers[second_nibble as usize] = self.registers[third_nibble as usize].wrapping_sub(self.registers[second_nibble as usize]);
-                    }
+                        self.registers[vx_index] = vy_value.wrapping_sub(vx_value);
+                        self.registers[0xF] = if vy_value >= vx_value { 1 } else { 0 };
+                    },
                     0xE => {
-                        if self.config.version != "CHIP-48" {
-                            self.registers[second_nibble as usize] = self.registers[third_nibble as usize];
-                        }
+                        let vx_index = second_nibble as usize;
+                        let vy_index = third_nibble as usize;
 
-                        self.registers[0xF] = self.registers[second_nibble as usize] >> 7 & 1;
+                        let source_value = if self.config.version != "CHIP-48" {
+                            self.registers[vy_index]
+                        } else {
+                            self.registers[vx_index]
+                        };
 
-                        self.registers[second_nibble as usize] = self.registers[second_nibble as usize] << 1;
-                    }
+                        let dropped_bit = (source_value >> 7) & 1;
+
+                        self.registers[vx_index] = source_value << 1;
+                        self.registers[0xF] = dropped_bit;
+                    },
                     _ => {}
                 }
             },
@@ -368,7 +400,15 @@ impl Chip8 {
         self.delay_timer = self.delay_timer.saturating_sub(1);
 
         if self.sound_timer > 0 {
-            println!("BEEP"); // !todo: Add beep sound to sound_timer decrement
+            let file = BufReader::new(
+                File::open("beep.wav")
+                    .expect("Failed to open beep.wav")
+            );
+
+            let source = Decoder::new(file)
+                .expect("Failed to decode beep.wav");
+
+            self.beep.append(source);
         }
 
         self.sound_timer = self.sound_timer.saturating_sub(1);

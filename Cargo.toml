@@ -6,5 +6,6 @@ edition = "2024"
 [dependencies]
 sdl2 = "0.38.0"
 serde = { version = "1", features = ["derive"] }
+rodio = "0.20"
 toml = "0.8"
 rand = "0.10.2"
