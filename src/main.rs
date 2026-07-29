@@ -45,7 +45,7 @@ fn main() {
     let mut sdl_canvas = sdl_window.into_canvas().build().expect("Failed to build sdl_canvas");
     let mut sdl_event_pump = sdl_context.event_pump().expect("Failed to build sdl_event_pump");
 
-    let rom = fs::read("./roms/IBM Logo.ch8").expect("Failed to load rom file.");
+    let rom = fs::read("./roms/Flags.ch8").expect("Failed to load rom file.");
     chip8.load(rom);
 
     fn match_scancode(scancode: Scancode) -> Option<u8> {

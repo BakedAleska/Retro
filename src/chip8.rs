@@ -1,4 +1,5 @@
 // TODO: Clean up / divide the chip8.rs file into multiple modules namely an instructions module alongside a chip8 object module.
+// TODO: General flag instruction debugging / math instruction debugging.
 
 use std::fs;
 use serde::Deserialize;
@@ -79,7 +80,6 @@ impl Chip8 {
     pub fn load(&mut self, rom: Vec<u8>) {
         self.memory[PC_START..PC_START + rom.len()].copy_from_slice(&*rom);
     }
-
 
 
     pub fn tick(&mut self) {
@@ -277,6 +277,21 @@ impl Chip8 {
                         }
                     }
                 }
+            },
+            0xE => {
+                match last_nibble {
+                    0xE => {
+                        if self.keypad[self.registers[second_nibble as usize] as usize] {
+                            self.pc += 2;
+                        }
+                    },
+                    0x1 => {
+                        if !self.keypad[self.registers[second_nibble as usize] as usize] {
+                            self.pc += 2;
+                        }
+                    }
+                    _ => {}
+                }
             }
             0xF => {
                 match last_byte {
@@ -289,6 +304,20 @@ impl Chip8 {
                     0x18 => {
                         self.sound_timer = self.registers[second_nibble as usize];
                     },
+                    0x0A => {
+                        let mut key_pressed = false;
+
+                        for (index, &pressed) in self.keypad.iter().enumerate() {
+                            if pressed {
+                                self.registers[second_nibble as usize] = index as u8;
+                                key_pressed = true;
+                                break
+                            }
+                        }
+                        if !key_pressed {
+                            self.pc -= 2;
+                        }
+                    }
                     0x1E => {
                         self.i = self.i + self.registers[second_nibble as usize] as usize;
                         if self.i >= 0x1000 {
