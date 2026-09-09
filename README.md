@@ -6,14 +6,15 @@ A CHIP-8 interpreter implemented in Rust, with SDL2 for display, input, and audi
 
 Correctness was verified against the [Timendus CHIP-8 test suite](https://github.com/Timendus/chip8-test-suite), specifically the `Corax+` opcode test and the `Flags` carry/borrow/shift test. Both ROMs write a pass or fail indicator per sub-check; execution was traced with the snapshot tool described below and cross-referenced against the ROM disassembly to confirm the meaning of each indicator address. Both report zero failures under the CHIP-48 quirk preset (22/22 and 47/47 checks, respectively), and this is pinned as a regression test in `tests/suite.rs`.
 
-`5-Quirks.ch8` and `6-Keypad.ch8` are menu-driven and require interactive key selection before running; the opcodes they exercise are covered separately by unit tests, but end-to-end verification of these two was not automated and should be done by running the ROM directly.
+`5-Quirks.ch8` and `6-Keypad.ch8` are menu-driven and require interactive key selection before running, so their results are not captured as automated regression tests. Both were verified manually by running the ROM directly, and all checks pass.
 
 | ROM | Result |
 |---|---|
 | `IBM Logo.ch8` | Renders correctly |
 | `Corax+.ch8` | 22/22 checks pass |
 | `Flags.ch8` | 47/47 checks pass |
-| `5-Quirks.ch8`, `6-Keypad.ch8` | Not automated; verify manually |
+| `5-Quirks.ch8` | All checks pass (verified manually) |
+| `6-Keypad.ch8` | All checks pass (verified manually) |
 
 <p>
   <img src="docs/screenshots/ibm-logo.png" width="256" alt="IBM logo test ROM"/>
