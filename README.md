@@ -4,7 +4,9 @@ A CHIP-8 interpreter implemented in Rust, with SDL2 for display, input, and audi
 
 ## Demo
 
-[Pong running in the interpreter](docs/videos/pong.mp4)
+[![Pong running in the interpreter](docs/screenshots/pong-demo.png)](docs/videos/pong.mp4)
+
+Click the image to play the video.
 
 ## Correctness
 
