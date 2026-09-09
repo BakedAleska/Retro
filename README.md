@@ -4,7 +4,7 @@ A CHIP-8 interpreter implemented in Rust, with SDL2 for display, input, and audi
 
 ## Demo
 
-![Pong running in the interpreter](docs/screenshots/pong-demo.gif)
+<img src="docs/screenshots/pong-demo.gif" width="100%" alt="Pong running in the interpreter"/>
 
 ## Correctness
 
