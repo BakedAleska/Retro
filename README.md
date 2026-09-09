@@ -4,7 +4,7 @@ A CHIP-8 interpreter implemented in Rust, with SDL2 for display, input, and audi
 
 ## Correctness
 
-Correctness was verified against the [Timendus CHIP-8 test suite](https://github.com/Timendus/chip8-test-suite), specifically the `Corax+` opcode test and the `Flags` carry/borrow/shift test. Both ROMs write a pass or fail indicator per sub-check; execution was traced with the snapshot tool described below and cross-referenced against the ROM disassembly to confirm the meaning of each indicator address. Both report zero failures under the CHIP-48 quirk preset (22/22 and 47/47 checks, respectively), and this is pinned as a regression test in `tests/test_roms.rs`.
+Correctness was verified against the [Timendus CHIP-8 test suite](https://github.com/Timendus/chip8-test-suite), specifically the `Corax+` opcode test and the `Flags` carry/borrow/shift test. Both ROMs write a pass or fail indicator per sub-check; execution was traced with the snapshot tool described below and cross-referenced against the ROM disassembly to confirm the meaning of each indicator address. Both report zero failures under the CHIP-48 quirk preset (22/22 and 47/47 checks, respectively), and this is pinned as a regression test in `tests/suite.rs`.
 
 `5-Quirks.ch8` and `6-Keypad.ch8` are menu-driven and require interactive key selection before running; the opcodes they exercise are covered separately by unit tests, but end-to-end verification of these two was not automated and should be done by running the ROM directly.
 
@@ -37,7 +37,7 @@ src/input.rs             keyboard scancode to CHIP-8 key mapping
 src/main.rs              SDL2 window, event loop, timing
 src/bin/snapshot.rs      headless tool: ROM to PNG, or opcode trace
 
-tests/test_roms.rs       integration tests against roms/*.ch8
+tests/suite.rs           integration tests against roms/*.ch8
 benches/                 Criterion benchmarks
 ```
 
