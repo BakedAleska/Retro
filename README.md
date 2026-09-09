@@ -78,7 +78,7 @@ Z X C V           A 0 B F
 
 ## Building and running
 
-Requires the SDL2 development libraries; see the [rust-sdl2](https://github.com/Rust-SDL2/rust-sdl2) setup instructions for the target platform.
+Requires the SDL2 development libraries to link; see the [rust-sdl2](https://github.com/Rust-SDL2/rust-sdl2) setup instructions for the target platform. On Windows, `build.rs` copies `config.toml`, `beep.wav`, and the vendored `SDL2.dll` next to the built executable automatically, so no manual setup is needed beyond that.
 
 ```sh
 cargo run --release                       # runs roms/5-Quirks.ch8 by default
