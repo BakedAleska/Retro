@@ -26,19 +26,19 @@ Correctness was verified against the [Timendus CHIP-8 test suite](https://github
 The emulation core (`src/chip8/`) is a plain library crate with no OS-level dependencies, which allows it to run headlessly under tests, benchmarks, and the snapshot tool. Only `src/main.rs`, the SDL2 platform layer, touches a window, an audio device, or the filesystem beyond loading a ROM.
 
 ```
-src/lib.rs                crate root, re-exports the public API
-src/config.rs               config.toml to Quirks, exe-relative path resolution
-src/chip8/mod.rs             Chip8 struct, fetch/decode/tick, public API
-src/chip8/opcodes.rs          instruction implementations and unit tests
-src/chip8/quirks.rs            Quirks / Platform, the ambiguous-instruction config
-src/chip8/font.rs                built-in hex digit sprites
-src/audio.rs               beep playback, decoded once rather than per tick
-src/input.rs                keyboard scancode to CHIP-8 key mapping
-src/main.rs                  SDL2 window, event loop, timing
-src/bin/snapshot.rs            headless tool: ROM to PNG, or opcode trace
+src/lib.rs               crate root, re-exports the public API
+src/config.rs            config.toml to Quirks, exe-relative path resolution
+src/chip8/mod.rs         Chip8 struct, fetch/decode/tick, public API
+src/chip8/opcodes.rs     instruction implementations and unit tests
+src/chip8/quirks.rs      Quirks / Platform, the ambiguous-instruction config
+src/chip8/font.rs        built-in hex digit sprites
+src/audio.rs             beep playback, decoded once rather than per tick
+src/input.rs             keyboard scancode to CHIP-8 key mapping
+src/main.rs              SDL2 window, event loop, timing
+src/bin/snapshot.rs      headless tool: ROM to PNG, or opcode trace
 
-tests/test_roms.rs         integration tests against roms/*.ch8
-benches/                     Criterion benchmarks
+tests/test_roms.rs       integration tests against roms/*.ch8
+benches/                 Criterion benchmarks
 ```
 
 The snapshot tool (`cargo run --bin snapshot`) runs a ROM for a fixed number of cycles with no display or audio device attached and writes the resulting display buffer to a PNG, or traces executed opcodes and register state to stderr. It accepts scripted key input to advance past a ROM's own menus. It was used throughout development in place of visual inspection of the SDL window.
