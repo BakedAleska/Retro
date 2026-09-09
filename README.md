@@ -2,6 +2,10 @@
 
 A CHIP-8 interpreter implemented in Rust, with SDL2 for display, input, and audio. It implements the complete CHIP-8 instruction set and a configurable quirks layer covering the behavioral differences between the original COSMAC VIP interpreter and the CHIP-48/SUPER-CHIP variant.
 
+## Demo
+
+[Pong running in the interpreter](docs/videos/pong.mp4)
+
 ## Correctness
 
 Correctness was verified against the [Timendus CHIP-8 test suite](https://github.com/Timendus/chip8-test-suite), specifically the `Corax+` opcode test and the `Flags` carry/borrow/shift test. Both ROMs write a pass or fail indicator per sub-check; execution was traced with the snapshot tool described below and cross-referenced against the ROM disassembly to confirm the meaning of each indicator address. Both report zero failures under the CHIP-48 quirk preset (22/22 and 47/47 checks, respectively), and this is pinned as a regression test in `tests/suite.rs`.
