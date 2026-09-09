@@ -12,14 +12,13 @@ Correctness was verified against the [Timendus CHIP-8 test suite](https://github
 
 `5-Quirks.ch8` and `6-Keypad.ch8` are menu-driven and require interactive key selection before running, so their results are not captured as automated regression tests. Both were verified manually by running the ROM directly, and all checks pass.
 
-<table width="100%">
-<tr><th>ROM</th><th>Result</th></tr>
-<tr><td><code>IBM Logo.ch8</code></td><td>Renders correctly</td></tr>
-<tr><td><code>Corax+.ch8</code></td><td>22/22 checks pass</td></tr>
-<tr><td><code>Flags.ch8</code></td><td>47/47 checks pass</td></tr>
-<tr><td><code>5-Quirks.ch8</code></td><td>All checks pass (verified manually)</td></tr>
-<tr><td><code>6-Keypad.ch8</code></td><td>All checks pass (verified manually)</td></tr>
-</table>
+| ROM | Result |
+|---|---|
+| `IBM Logo.ch8` | Renders correctly |
+| `Corax+.ch8` | 22/22 checks pass |
+| `Flags.ch8` | 47/47 checks pass |
+| `5-Quirks.ch8` | All checks pass (verified manually) |
+| `6-Keypad.ch8` | All checks pass (verified manually) |
 
 <p>
   <img src="docs/screenshots/ibm-logo.png" width="256" alt="IBM logo test ROM"/>
@@ -57,13 +56,12 @@ The snapshot tool (`cargo run --bin snapshot`) runs a ROM for a fixed number of 
 version = "CHIP-48"   # or "CHIP-8"
 ```
 
-<table width="100%">
-<tr><th>Quirk</th><th>CHIP-8</th><th>CHIP-48</th></tr>
-<tr><td><code>8XY6</code> / <code>8XYE</code> shift source</td><td>VY</td><td>VX</td></tr>
-<tr><td><code>BNNN</code> jump with offset</td><td><code>NNN + V0</code></td><td><code>NNN + VX</code></td></tr>
-<tr><td><code>FX55</code> / <code>FX65</code> memory ops</td><td>increments <code>I</code></td><td>leaves <code>I</code> unchanged</td></tr>
-<tr><td><code>8XY1</code> / <code>8XY2</code> / <code>8XY3</code> logic ops</td><td>resets <code>VF</code> to 0</td><td>leaves <code>VF</code> unchanged</td></tr>
-</table>
+| Quirk | CHIP-8 | CHIP-48 |
+|---|---|---|
+| `8XY6` / `8XYE` shift source | VY | VX |
+| `BNNN` jump with offset | `NNN + V0` | `NNN + VX` |
+| `FX55` / `FX65` memory ops | increments `I` | leaves `I` unchanged |
+| `8XY1` / `8XY2` / `8XY3` logic ops | resets `VF` to 0 | leaves `VF` unchanged |
 
 ## Performance
 
