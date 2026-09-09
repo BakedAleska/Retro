@@ -92,4 +92,4 @@ cargo run --bin snapshot -- roms/5-Quirks.ch8 800 out.png --trace-from=0 --tap=3
 
 ## License
 
-MIT
+[MIT](LICENSE)
