@@ -3,6 +3,14 @@ name = "Retro"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "retro"
+path = "src/lib.rs"
+
+[[bin]]
+name = "retro"
+path = "src/main.rs"
+
 [dependencies]
 sdl2 = "0.38.0"
 serde = { version = "1", features = ["derive"] }
