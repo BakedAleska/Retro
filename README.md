@@ -26,22 +26,19 @@ Correctness was verified against the [Timendus CHIP-8 test suite](https://github
 The emulation core (`src/chip8/`) is a plain library crate with no OS-level dependencies, which allows it to run headlessly under tests, benchmarks, and the snapshot tool. Only `src/main.rs`, the SDL2 platform layer, touches a window, an audio device, or the filesystem beyond loading a ROM.
 
 ```
-src/
-├── lib.rs            crate root, re-exports the public API
-├── config.rs          config.toml -> Quirks, exe-relative path resolution
-├── chip8/
-│   ├── mod.rs          Chip8 struct, fetch/decode/tick, public API
-│   ├── opcodes.rs       instruction implementations and unit tests
-│   ├── quirks.rs         Quirks / Platform, the ambiguous-instruction config
-│   └── font.rs            built-in hex digit sprites
-├── audio.rs           beep playback, decoded once rather than per tick
-├── input.rs            keyboard scancode to CHIP-8 key mapping
-├── main.rs             SDL2 window, event loop, timing
-└── bin/
-    └── snapshot.rs      headless tool: ROM -> PNG, or opcode trace
+src/lib.rs                crate root, re-exports the public API
+src/config.rs               config.toml to Quirks, exe-relative path resolution
+src/chip8/mod.rs             Chip8 struct, fetch/decode/tick, public API
+src/chip8/opcodes.rs          instruction implementations and unit tests
+src/chip8/quirks.rs            Quirks / Platform, the ambiguous-instruction config
+src/chip8/font.rs                built-in hex digit sprites
+src/audio.rs               beep playback, decoded once rather than per tick
+src/input.rs                keyboard scancode to CHIP-8 key mapping
+src/main.rs                  SDL2 window, event loop, timing
+src/bin/snapshot.rs            headless tool: ROM to PNG, or opcode trace
 
-tests/test_roms.rs      integration tests against roms/*.ch8
-benches/                 Criterion benchmarks
+tests/test_roms.rs         integration tests against roms/*.ch8
+benches/                     Criterion benchmarks
 ```
 
 The snapshot tool (`cargo run --bin snapshot`) runs a ROM for a fixed number of cycles with no display or audio device attached and writes the resulting display buffer to a PNG, or traces executed opcodes and register state to stderr. It accepts scripted key input to advance past a ROM's own menus. It was used throughout development in place of visual inspection of the SDL window.
@@ -65,16 +62,17 @@ version = "CHIP-48"   # or "CHIP-8"
 
 Measured with `cargo bench` (Criterion):
 
-- `tick()` throughput: approximately 81µs per 10,000 emulated instructions across a representative instruction mix, or roughly 123M instructions/sec. A CHIP-8 program executes at approximately 700 instructions/sec, so the interpreter is not the limiting factor in the frame loop.
-- The prior implementation re-opened and re-decoded `beep.wav` on every tick the sound timer was active, at up to 60 calls/sec. That path measured 236µs/call. The current implementation decodes the file once at startup and clones a cached sample buffer per tick, at 0.58µs/call.
+- `tick()` throughput: approximately 81 microseconds per 10,000 emulated instructions across a representative instruction mix, or roughly 123M instructions per second. A CHIP-8 program executes at approximately 700 instructions per second, so the interpreter is not the limiting factor in the frame loop.
+- The prior implementation re-opened and re-decoded `beep.wav` on every tick the sound timer was active, at up to 60 calls per second. That path measured 236 microseconds per call. The current implementation decodes the file once at startup and clones a cached sample buffer per tick, at 0.58 microseconds per call.
 
 ## Controls
 
 ```
-1 2 3 4        1 2 3 C
-Q W E R   ->   4 5 6 D
-A S D F        7 8 9 E
-Z X C V        A 0 B F
+Keyboard          CHIP-8 keypad
+1 2 3 4           1 2 3 C
+Q W E R           4 5 6 D
+A S D F           7 8 9 E
+Z X C V           A 0 B F
 ```
 
 ## Building and running
